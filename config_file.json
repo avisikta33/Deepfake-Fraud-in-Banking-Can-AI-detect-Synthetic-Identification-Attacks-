@@ -1,0 +1,373 @@
+{
+  "project_info": {
+    "name": "Deepfake Fraud Detection in Banking",
+    "version": "1.0.0",
+    "description": "AI-powered system for detecting synthetic identity attacks in banking KYC processes",
+    "author": "Master's in Statistics Student",
+    "institution": "University Name",
+    "date": "2025-10-04"
+  },
+  
+  "data": {
+    "real_images_path": "data/raw/real_faces",
+    "fake_images_path": "data/raw/fake_faces",
+    "text_data_path": "data/raw/kyc_text_data.csv",
+    "processed_data_path": "data/processed",
+    "img_size": [224, 224],
+    "test_size": 0.2,
+    "val_size": 0.1,
+    "random_seed": 42,
+    "augmentation": {
+      "enabled": true,
+      "rotation_range": 20,
+      "width_shift_range": 0.2,
+      "height_shift_range": 0.2,
+      "horizontal_flip": true,
+      "zoom_range": 0.2,
+      "shear_range": 0.15
+    }
+  },
+  
+  "cnn_model": {
+    "architecture": "efficientnet",
+    "model_type": "efficientnetb4",
+    "input_shape": [224, 224, 3],
+    "transfer_learning": true,
+    "freeze_layers": 20,
+    "training": {
+      "epochs": 50,
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "optimizer": "adam",
+      "loss": "binary_crossentropy",
+      "metrics": ["accuracy", "precision", "recall", "auc"]
+    },
+    "callbacks": {
+      "early_stopping": {
+        "monitor": "val_loss",
+        "patience": 10,
+        "restore_best_weights": true
+      },
+      "reduce_lr": {
+        "monitor": "val_loss",
+        "factor": 0.5,
+        "patience": 5,
+        "min_lr": 1e-7
+      },
+      "model_checkpoint": {
+        "monitor": "val_auc",
+        "mode": "max",
+        "save_best_only": true
+      }
+    },
+    "custom_head": {
+      "dense_layers": [512, 256],
+      "dropout_rates": [0.5, 0.4],
+      "activation": "relu",
+      "output_activation": "sigmoid"
+    }
+  },
+  
+  "bert_model": {
+    "model_name": "bert-base-uncased",
+    "num_labels": 2,
+    "max_length": 512,
+    "training": {
+      "epochs": 4,
+      "batch_size": 16,
+      "learning_rate": 2e-5,
+      "warmup_steps": 0,
+      "weight_decay": 0.01,
+      "gradient_accumulation_steps": 1,
+      "max_grad_norm": 1.0
+    },
+    "tokenizer": {
+      "do_lower_case": true,
+      "add_special_tokens": true,
+      "padding": "max_length",
+      "truncation": true
+    }
+  },
+  
+  "hybrid_model": {
+    "meta_classifier": "gradient_boosting",
+    "meta_classifier_params": {
+      "gradient_boosting": {
+        "n_estimators": 200,
+        "learning_rate": 0.1,
+        "max_depth": 5,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2,
+        "subsample": 0.8,
+        "random_state": 42
+      },
+      "random_forest": {
+        "n_estimators": 200,
+        "max_depth": 10,
+        "min_samples_split": 5,
+        "class_weight": "balanced",
+        "random_state": 42
+      },
+      "logistic_regression": {
+        "max_iter": 1000,
+        "class_weight": "balanced",
+        "random_state": 42,
+        "solver": "lbfgs"
+      }
+    },
+    "feature_extraction": {
+      "cnn_features": 10,
+      "bert_embeddings": 20,
+      "cross_modal_features": 5,
+      "metadata_features": 5
+    },
+    "normalization": {
+      "method": "standard_scaler",
+      "with_mean": true,
+      "with_std": true
+    }
+  },
+  
+  "evaluation": {
+    "metrics": [
+      "accuracy",
+      "precision",
+      "recall",
+      "f1_score",
+      "roc_auc",
+      "specificity",
+      "average_precision"
+    ],
+    "bootstrap": {
+      "n_iterations": 1000,
+      "confidence_level": 0.95,
+      "random_state": 42
+    },
+    "cross_validation": {
+      "enabled": true,
+      "n_folds": 5,
+      "stratified": true
+    },
+    "threshold_optimization": {
+      "metric": "f1_score",
+      "n_thresholds": 100
+    }
+  },
+  
+  "api": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false,
+    "threaded": true,
+    "max_file_size_mb": 10,
+    "allowed_extensions": ["png", "jpg", "jpeg", "mp4", "avi"],
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 100,
+      "requests_per_hour": 5000
+    },
+    "thresholds": {
+      "confidence_threshold": 0.5,
+      "high_risk_threshold": 0.7,
+      "medium_risk_threshold": 0.5
+    },
+    "cors": {
+      "enabled": true,
+      "origins": ["*"]
+    },
+    "authentication": {
+      "enabled": false,
+      "method": "api_key"
+    }
+  },
+  
+  "deployment": {
+    "environment": "production",
+    "docker": {
+      "image_name": "deepfake-detection-api",
+      "tag": "latest",
+      "base_image": "python:3.9-slim",
+      "expose_port": 5000
+    },
+    "kubernetes": {
+      "replicas": 3,
+      "resources": {
+        "requests": {
+          "memory": "4Gi",
+          "cpu": "2"
+        },
+        "limits": {
+          "memory": "8Gi",
+          "cpu": "4"
+        }
+      },
+      "auto_scaling": {
+        "enabled": true,
+        "min_replicas": 2,
+        "max_replicas": 10,
+        "target_cpu_utilization": 70
+      }
+    },
+    "monitoring": {
+      "enabled": true,
+      "metrics_port": 9090,
+      "health_check_interval": 30,
+      "log_level": "INFO"
+    }
+  },
+  
+  "paths": {
+    "model_output": "models/",
+    "results_output": "results/",
+    "logs_output": "logs/",
+    "checkpoints": "checkpoints/",
+    "tensorboard_logs": "logs/tensorboard/"
+  },
+  
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "logs/application.log",
+    "max_bytes": 10485760,
+    "backup_count": 5
+  },
+  
+  "security": {
+    "encryption": {
+      "enabled": true,
+      "algorithm": "AES-256-GCM"
+    },
+    "data_retention": {
+      "processed_images_days": 0,
+      "logs_days": 90,
+      "audit_trail_days": 365
+    },
+    "compliance": {
+      "gdpr": true,
+      "pci_dss": true,
+      "hipaa": false
+    }
+  },
+  
+  "performance": {
+    "gpu": {
+      "enabled": true,
+      "device_id": 0,
+      "memory_growth": true,
+      "allow_memory_growth": true
+    },
+    "cpu": {
+      "num_threads": 4,
+      "inter_op_threads": 2,
+      "intra_op_threads": 2
+    },
+    "batch_processing": {
+      "max_batch_size": 50,
+      "timeout_seconds": 30
+    },
+    "caching": {
+      "enabled": true,
+      "max_size_mb": 1000,
+      "ttl_seconds": 3600
+    }
+  },
+  
+  "experiments": {
+    "tracking": {
+      "enabled": true,
+      "backend": "mlflow",
+      "experiment_name": "deepfake_detection"
+    },
+    "random_seed": 42,
+    "reproducibility": {
+      "deterministic": true,
+      "benchmark": false
+    }
+  },
+  
+  "risk_assessment": {
+    "score_ranges": {
+      "low": [0, 49],
+      "medium": [50, 69],
+      "high": [70, 100]
+    },
+    "actions": {
+      "low": "proceed_standard_workflow",
+      "medium": "manual_review_required",
+      "high": "reject_and_investigate"
+    },
+    "fraud_indicators": {
+      "synthetic_detection_weight": 0.4,
+      "confidence_weight": 0.3,
+      "cross_modal_consistency_weight": 0.2,
+      "metadata_anomaly_weight": 0.1
+    }
+  },
+  
+  "data_sources": {
+    "training_datasets": [
+      {
+        "name": "FaceForensics++",
+        "url": "https://github.com/ondyari/FaceForensics",
+        "type": "video",
+        "license": "academic_use"
+      },
+      {
+        "name": "Celeb-DF",
+        "url": "https://github.com/yuezunli/celeb-deepfakeforensics",
+        "type": "video",
+        "license": "academic_use"
+      },
+      {
+        "name": "DFDC",
+        "url": "https://ai.facebook.com/datasets/dfdc/",
+        "type": "video",
+        "license": "research"
+      }
+    ]
+  },
+  
+  "model_versioning": {
+    "enabled": true,
+    "storage": "models/versions/",
+    "format": "v{major}.{minor}.{patch}",
+    "current_version": "1.0.0",
+    "changelog": {
+      "1.0.0": "Initial release with CNN + BERT hybrid model"
+    }
+  },
+  
+  "continuous_learning": {
+    "enabled": false,
+    "retraining_schedule": "monthly",
+    "data_collection": {
+      "collect_predictions": true,
+      "collect_feedback": true,
+      "minimum_samples": 1000
+    },
+    "validation": {
+      "performance_threshold": 0.95,
+      "drift_detection": true,
+      "drift_threshold": 0.05
+    }
+  },
+  
+  "alerting": {
+    "enabled": true,
+    "channels": ["email", "slack"],
+    "conditions": {
+      "high_error_rate": {
+        "threshold": 0.05,
+        "window_minutes": 60
+      },
+      "low_confidence_predictions": {
+        "threshold": 0.6,
+        "count": 100
+      },
+      "model_drift": {
+        "metric": "accuracy",
+        "threshold": 0.02
+      }
+    }
+  }
+}
