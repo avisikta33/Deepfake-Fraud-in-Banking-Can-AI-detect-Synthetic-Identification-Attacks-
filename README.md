@@ -355,17 +355,12 @@ This work contributes to the growing body of research on AI safety in financial 
 
 ---
 
-## 📞 Contact & Resources
+## Contact:
 
-**GitHub Repository**: [Link to repo]  
-**Live Demo**: [Link to deployed API]  
-**Documentation**: [Link to full docs]  
-**Presentation**: [Link to slides]
-
-**Author**: Master's in Statistics Student  
-**Advisor**: [Advisor Name]  
-**Institution**: [University Name]  
-**Date**: October 2025
+**Author**: Avisikta Das  
+**Course**: M.Sc. Statistics  
+**Institution**: Banaras Hindu University
+**Date**: February 2025
 
 ---
 
